@@ -62,6 +62,11 @@ const WebCam = () => {
     }
   }, [recordedChunks]);
 
+  const handleCaptureSnapshot = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setImgSrc(imageSrc);
+  }, [webcamRef, setImgSrc]);
+
   const handleDevices = useCallback(
     (mediaDevices) => {
       const videoDevices = mediaDevices.filter(
@@ -83,13 +88,11 @@ const WebCam = () => {
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices().then(handleDevices);
 
-    // Request user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           setLocation({ latitude, longitude });
-          //   setLocation({ latitude: 13.19816, longitude: 77.680962 });
 
           fetch(
             `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${latitude},${longitude}&lang=en-US&apiKey=${API_KEY}`
@@ -114,13 +117,6 @@ const WebCam = () => {
     }
   }, [handleDevices, API_KEY]);
 
-  //   const capture = useCallback(() => {
-  //     if (webcamRef.current) {
-  //       const imageSrc = webcamRef.current.getScreenshot();
-  //       setImgSrc(imageSrc);
-  //     }
-  //   }, [webcamRef, setImgSrc]);
-
   return (
     <div className="max-w-[50%]">
       {devices.map((device, key) => (
@@ -133,6 +129,7 @@ const WebCam = () => {
               facingMode: facingMode,
             }}
             ref={webcamRef}
+            screenshotFormat="image/jpeg"
           />
           <p className="font-bold">
             {device.label || `Device ${key + 1}`} (
@@ -140,7 +137,24 @@ const WebCam = () => {
           </p>
           <p className="font-bold">Latitude: {location.latitude}</p>
           <p className="font-bold">Longitude: {location.longitude}</p>
-          <p className="font-bold">Address: {address}</p>
+          <p className="font-bold">Location: {address}</p>
+
+          {/* {location.latitude && location.longitude && (
+            <iframe
+              width="600"
+              height="450"
+              style={{ border: 0 }}
+              src={`https://www.here.com/maps/embed?apiKey=${API_KEY}&c=${location.latitude},${location.longitude}&z=14`}
+              allowFullScreen
+            ></iframe>
+          )} */}
+
+          <button
+            className="bg-blue-600 text-white px-4 py-2 text-lg font-serif"
+            onClick={handleCaptureSnapshot}
+          >
+            Capture Snapshot
+          </button>
 
           {capturing ? (
             <button
@@ -151,7 +165,7 @@ const WebCam = () => {
             </button>
           ) : (
             <button
-              className="bg-black text-white px-4 py-2 text-lg font-serif"
+              className="bg-black text-white px-4 py-2 ml-4 text-lg font-serif"
               onClick={handleStartCaptureClick}
             >
               Start Capture
@@ -164,6 +178,12 @@ const WebCam = () => {
             >
               Download
             </button>
+          )}
+          {imgSrc && (
+            <div>
+              <h3>Captured Snapshot</h3>
+              <img src={imgSrc} alt="Captured snapshot" />
+            </div>
           )}
         </div>
       ))}
