@@ -9,7 +9,7 @@ const HeroSection = () => {
           CITY SURVEILLANTS
         </h1>
         <div className="flex space-x-4 font-mono">
-          <a href="/webcam">
+          <a href="/upload">
             <button className="px-6 py-4 bg-blue-500 text-white rounded hover:bg-blue-600">
               Get Started
             </button>

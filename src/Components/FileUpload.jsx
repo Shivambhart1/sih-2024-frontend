@@ -1,8 +1,11 @@
 import { useState } from "react";
+import axios from "axios";
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadResults, setUploadResults] = useState(null);
 
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files);
@@ -10,10 +13,10 @@ const FileUpload = () => {
     let errorMsg = "";
 
     selectedFiles.forEach((file) => {
-      if (!file.type.startsWith("video/")) {
-        errorMsg = "Only video files are allowed.";
+      if (!file.type.startsWith("image/")) {
+        errorMsg = "Only image files are allowed.";
       } else if (file.size > 30 * 1024 * 1024) {
-        errorMsg = "Each video must be smaller than 30MB.";
+        errorMsg = "Each image must be smaller than 30MB.";
       } else {
         validFiles.push(file);
       }
@@ -28,13 +31,34 @@ const FileUpload = () => {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (files.length > 0) {
-      console.log("Files uploaded:", files);
-      // Handle file upload here, e.g., by sending to a server
+      setUploading(true);
+      const formData = new FormData();
+      files.forEach((file) => formData.append("file", file));
+
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/upload",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            responseType: "blob",
+          }
+        );
+
+        const url = URL.createObjectURL(response.data);
+        setUploadResults(url);
+      } catch (error) {
+        console.error("Error uploading file:", error);
+      } finally {
+        setUploading(false);
+      }
     } else {
-      setError("Please select valid video files.");
+      setError("Please select valid image files.");
     }
   };
 
@@ -58,25 +82,28 @@ const FileUpload = () => {
       </svg>
     );
   }
+
   return (
     <div className="flex flex-col items-center p-8">
       <form onSubmit={handleSubmit} className="w-[50%]">
         <div className="mb-4">
           <div className="grid gap-2">
             <label htmlFor="file" className="text-sm font-medium">
-              Upload File
+              Upload Image
             </label>
             <div className="group relative flex items-center justify-center w-full h-32 px-4 py-6 border-2 border-dashed rounded-md bg-background hover:border-primary transition-colors">
               <div className="flex flex-col items-center space-y-2 text-muted-foreground group-hover:text-primary">
                 <UploadIcon className="w-8 h-8" />
                 <p className="text-sm font-mono">
-                  {"Drag and drop a file or click to upload".toUpperCase()}
+                  {"Drag and drop an image or click to upload".toUpperCase()}
                 </p>
               </div>
               <input
                 id="file"
                 type="file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={handleFileChange}
+                multiple
               />
             </div>
             <div className="text-sm text-muted-foreground">
@@ -88,8 +115,9 @@ const FileUpload = () => {
         <button
           type="submit"
           className="bg-black text-white px-4 py-2 rounded-full"
+          disabled={uploading}
         >
-          Upload Files
+          {uploading ? "Uploading..." : "Upload Images"}
         </button>
       </form>
       {files.length > 0 && (
@@ -104,6 +132,16 @@ const FileUpload = () => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {uploadResults && (
+        <div className="mt-4">
+          <h3 className="text-2xl font-bold mb-2">Detection Results:</h3>
+          <img
+            src={uploadResults}
+            alt="Processed"
+            style={{ maxWidth: "60%" }}
+          />
         </div>
       )}
     </div>
